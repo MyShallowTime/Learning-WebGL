@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<head>
+    <title>Webgl Fundamentals</title>
+    <style>
+        #webgl {
+            width: 400px;
+            height: 300px;
+            background-color: #414141;
+        }
+    </style>
+
+</head>
+<body>
+    <!-- 其他变量都一样，加上width，三角形更清晰 -->
+    <canvas id="webgl" width="400px" height="300px"></canvas>
+    <script id="vertex-shader" type="notjs">
+        // 一个属性值，将会从缓冲中获取数据
+        // vec4是数据类型，相当于xyzw
+        attribute vec4 a_position;
+
+        // 都有一个main函数(是着色器，不是着色程序)
+        void main() {
+            // gl_Position 是顶点着色器主要设置的变量
+            gl_Position = a_position;
+        }
+    </script>
+    <script id="fragment-shader" type="notjs">
+        // 精度 中等 浮点类型
+        precision mediump float;
+
+        void main() {
+            // 片段着色器的主要设置变量
+            // rgba, [0, 1]
+            gl_FragColor = vec4(1, 0, 0.5, 1); // 绘制值:[255, 0, 127, 255]
+        }
+    </script>
+    <script src="./webgl.js"></script>
+</body>

@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<head>
+    <title>Webgl Fundamentals</title>
+    <style>
+        #webgl {
+            width: 400px;
+            height: 300px;
+            background-color: #414141;
+        }
+    </style>
+
+</head>
+<body>
+    <canvas id="webgl" width="400px" height="300px"></canvas>
+    <script id="vertex-shader" type="notjs">
+        // vec2 xy
+        attribute vec2 a_position;
+        // 分辨率 width height
+        uniform vec2 u_resolution;
+    
+        void main() {
+            // 像素坐标 转换到 [0, 1]
+            vec2 zeroToOne = a_position / u_resolution;
+
+            // 再把 [0, 1] 转换成 [0, 2]
+            vec2 zeroToTwo = zeroToOne * 2.0;
+
+            // 把[0, 2] 转换到 [-1, 1]（裁剪空间）
+            vec2 clipSpace = zeroToTwo - 1.0;
+
+            // 感觉像矩阵计算
+            //  [200, 150] / [400, 300] = [0.5, 0.5]
+            //  [0.5, 0.5] * 2 = [1, 1]
+            //  [1, 1] - 1 = [0, 0]
+            // GPU接受这个值并保存起来
+            // gl_Position = vec4(clipSpace, 0, 1);
+            // webgl认为左下角是0,0， 如果想像传统二维API那样起点在左上角，翻转y轴即可
+            gl_Position = vec4(clipSpace * vec2(1, -1), 0, 1);
+        }
+    </script>
+    <script id="fragment-shader" type="notjs">
+        // 精度 中等 浮点类型
+        precision mediump float;
+
+        void main() {
+            // 片段着色器的主要设置变量
+            // rgba, [0, 1]
+            // 对于每一个像素，WebGL会调用该值设置像素颜色
+            gl_FragColor = vec4(1, 0, 0.5, 1); // 绘制值:[255, 0, 127, 255]
+        }
+    </script>
+    <script src="./webglByPixel.js"></script>
+</body>
