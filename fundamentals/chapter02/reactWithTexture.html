@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<head>
+    <title>Webgl Fundamentals</title>
+    <style>
+        #webgl {
+            width: 400px;
+            height: 300px;
+            background-color: #414141;
+        }
+    </style>
+
+</head>
+<body>
+    <canvas id="webgl" width="400px" height="300px"></canvas>
+    <script id="vertex-shader" type="notjs">
+        attribute vec2 a_position;
+        // 分辨率
+        uniform vec2 u_resolution;
+
+        attribute vec2 a_textCoord;
+        varying vec2 v_textCoord;
+
+        void main() {
+            // 像素坐标 转换到 [0, 1]
+            vec2 zeroToOne = a_position / u_resolution;
+
+            // 再把 [0, 1] 转换成 [0, 2]
+            vec2 zeroToTwo = zeroToOne * 2.0;
+
+            // 把[0, 2] 转换到 [-1, 1]（裁剪空间）
+            vec2 clipSpace = zeroToTwo - 1.0;
+
+            // 感觉像矩阵计算
+            //  [200, 150] / [400, 300] = [0.5, 0.5]
+            //  [0.5, 0.5] * 2 = [1, 1]
+            //  [1, 1] - 1 = [0, 0]
+            gl_Position = vec4(clipSpace, 0, 1);
+
+            // 将纹理坐标传给片段着色器
+            // GPU会在点之间进行插值
+            v_textCoord = a_textCoord;
+        }
+    </script>
+    <script id="fragment-shader" type="notjs">
+        // 精度 中等 浮点类型 必须的，没有就创建shader失败
+        precision mediump float;
+        // 纹理 不是文章中说，完全没注意到u_image没有设置
+        uniform sampler2D u_image;
+        uniform vec2 u_textureSize;
+
+        // 从顶点着色器传入的纹理坐标
+        varying vec2 v_textCoord;
+
+        void main() {
+            // 在纹理上寻找对应的颜色值
+            // gl_FragColor = texture2D(u_image, v_textCoord);
+
+            // 红色和蓝色调换位置 这种数据结构昨天粗略看过一眼
+            // gl_FragColor = texture2D(u_image, v_textCoord).bgra;
+
+            // 如果图像处理需要其他像素的颜色值怎么办？ 计算移动一个像素对应的距离 onePixel = 1 / textureSize
+            // 将每个像素的值设置为与左右像素的均值
+            vec2 onePixel = vec2(1.0, 1.0) / u_textureSize;
+            gl_FragColor = (
+                texture2D(u_image, v_textCoord) + 
+                texture2D(u_image, v_textCoord + vec2(onePixel.x, 0.0)) + 
+                texture2D(u_image, v_textCoord + vec2(-onePixel.x, 0.0))) / 3.0;
+        }
+    </script>
+    <script src="./reactWithTexture.js"></script>
+</body>

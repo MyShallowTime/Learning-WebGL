@@ -66,37 +66,80 @@ const setRectangle = (gl, x, y, width, height) => {
     ]), gl.STATIC_DRAW);
 }
 
+const computeKernelWeight = (kernel) => {
+    const weight = kernel.reduce((prev, curr) => {
+        return prev + curr;
+    });
+    return weight <= 0 ? 1 : weight;
+}
+
 // 初始化代码，只会运行一次
 const main = () => {
+    const image = new Image();
+    image.src = "./images/35020814.png";
+    image.onload = () => {
+        render(image);
+    }
+}
+const render = (image) => {
     // 初始化一个gl
     const container = document.querySelector("#webgl");
     const gl = container.getContext('webgl');
-
     // 创建顶点着色器
     const vertexShaderSource = document.querySelector("#vertex-shader").text;
     const vertexShader = createShader(gl, gl.VERTEX_SHADER, vertexShaderSource);
     // 创建片段着色器
     const fragmentShaderSource = document.querySelector("#fragment-shader").text;
     const fragmentShader = createShader(gl, gl.FRAGMENT_SHADER, fragmentShaderSource);
-
     // 创建着色程序
     const program = createProgram(gl, vertexShader, fragmentShader);
 
 
-    // 添加数据
-    // WebGL的主要任务就是设置好状态并为GLSL着色程序提供数据
+    // 添加数据-WebGL的主要任务就是设置好状态并为GLSL着色程序提供数据
 
     // 初始化！时，找到属性值的位置
     const positionAttributeLocation = gl.getAttribLocation(program, "a_position");
-    const resolutionUniformLocation = gl.getUniformLocation(program, 'u_resolution');
-    const colorUniformLocation = gl.getUniformLocation(program, "u_color");
-
     // ## 属性值从缓冲中获取数据
     // 创建缓冲
     const positionBuffer = gl.createBuffer();
-
     // 绑定位置信息缓冲 gl.ARRAY_BUFFER 约等于 webgl的一个全局变量
     gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+    // 绑定数据
+    const range = 150;
+    setRectangle(gl, randomInt(range), randomInt(range), 150, 100 );
+
+    // 找到纹理地址
+    const texcoordLocation = gl.getAttribLocation(program, "a_textCoord");
+    const textCoordBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, textCoordBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
+        0, 0,
+        1, 0,
+        0, 1,
+        0, 1,
+        1, 0, 
+        1, 1
+    ]), gl.STATIC_DRAW);
+
+    const texture = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, texture);
+
+    // 设置参数，可以绘制任何尺寸的图像 
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+
+    // 将图像上传到纹理
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+
+    const resolutionUniformLocation = gl.getUniformLocation(program, 'u_resolution');
+    const textureSizeUniformLocation = gl.getUniformLocation(program, 'u_textureSize');
+
+
+    const kernelLocation = gl.getUniformLocation(program, 'u_kernel[0]');
+    const kernelWeightLocation = gl.getUniformLocation(program, 'u_kernelWeight');
+
 
     // 裁剪空间的-1 -> +1分别对应x， y 的width， height
     // css里面设置400*300， 但gl.canvas的宽高还是300*150, 实际渲染时还是400*300， why？这句有什么意义？
@@ -111,11 +154,9 @@ const main = () => {
 
     // 怎么从我们准备的缓冲中获取数据给着色器中的属性（a_position），需要启用该属性。
     gl.enableVertexAttribArray(positionAttributeLocation);
-
     // 从缓冲中读取数据
     // 将绑定点绑定到缓冲数据， 前面已经绑定过了
-    // gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
-
+    gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
     // 告诉属性（a_position）怎么从positionBuffer中读取数据。
     const size = 2; // 每次迭代运行提取两个单位数据
     const type = gl.FLOAT;//每个单位的数据类型是32为浮点型
@@ -126,20 +167,30 @@ const main = () => {
     // 将属性（a_position）绑定到当前ARRAY_BUFFER（positionBuffer）
     // 意思是 a_position 读取 positionBuffer 中的前两个值， 0， 0（看下文理解正确）
 
+    // 纹理
+    gl.enableVertexAttribArray(texcoordLocation);
+    gl.bindBuffer(gl.ARRAY_BUFFER, textCoordBuffer);
+    gl.vertexAttribPointer(texcoordLocation, size, type, normaliz, stride, offset);
+
     // 设置全局变量-分辨率
     gl.uniform2f(resolutionUniformLocation, gl.canvas.width, gl.canvas.height);
 
-    gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
-    const range = 150;
-    for(let ii = 0; ii < 50; ++ii) {
-        setRectangle(gl, randomInt(range), randomInt(range), randomInt(range), randomInt(range) );
-        gl.uniform4f(colorUniformLocation, Math.random(), Math.random(), Math.random(), 1);
-         // WebGL运行GLSL着色程序
-        const primitiveType = gl.TRIANGLES; // 矩形也是用三角形来绘制的
-        const offset2 = 0; 
-        const count = 6; 
-        gl.drawArrays(primitiveType, offset2, count); // 使着色器能够在GPU上运行
-    }
+    // 设置全局变量-纹理大小
+    gl.uniform2f(textureSizeUniformLocation, image.width, image.height);
+
+    const edgeDetectKernel = [
+        -1,-1,-1,
+        -1,8,-1,
+        -1,-1,-1
+    ];
+    gl.uniform1fv(kernelLocation, edgeDetectKernel);
+    gl.uniform1f(kernelWeightLocation, computeKernelWeight(edgeDetectKernel));
+
+    // WebGL运行GLSL着色程序
+    const primitiveType = gl.TRIANGLES; // 矩形也是用三角形来绘制的
+    const offset2 = 0; 
+    const count = 6; 
+    gl.drawArrays(primitiveType, offset2, count); // 使着色器能够在GPU上运行
 }
 
 main();

@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<head>
+    <title>Webgl Fundamentals</title>
+    <style>
+        #webgl {
+            width: 400px;
+            height: 300px;
+            background-color: #414141;
+        }
+    </style>
+
+</head>
+<body>
+    <canvas id="webgl" width="400px" height="300px"></canvas>
+    <script id="vertex-shader" type="notjs">
+        attribute vec2 a_position;
+        // 分辨率
+        uniform vec2 u_resolution;
+
+        attribute vec2 a_textCoord;
+        varying vec2 v_textCoord;
+
+        void main() {
+            // 像素坐标 转换到 [0, 1]
+            vec2 zeroToOne = a_position / u_resolution;
+
+            // 再把 [0, 1] 转换成 [0, 2]
+            vec2 zeroToTwo = zeroToOne * 2.0;
+
+            // 把[0, 2] 转换到 [-1, 1]（裁剪空间）
+            vec2 clipSpace = zeroToTwo - 1.0;
+
+            // 感觉像矩阵计算
+            //  [200, 150] / [400, 300] = [0.5, 0.5]
+            //  [0.5, 0.5] * 2 = [1, 1]
+            //  [1, 1] - 1 = [0, 0]
+            gl_Position = vec4(clipSpace, 0, 1);
+
+            // 将纹理坐标传给片段着色器
+            // GPU会在点之间进行插值
+            v_textCoord = a_textCoord;
+        }
+    </script>
+    <script id="fragment-shader" type="notjs">
+        // 精度 中等 浮点类型 必须的，没有就创建shader失败
+        precision mediump float;
+        // 纹理 不是文章中说，完全没注意到u_image没有设置
+        uniform sampler2D u_image;
+        uniform vec2 u_textureSize;
+        // ?? 算法还不是很懂
+        uniform float u_kernel[9];
+        uniform float u_kernelWeight;
+
+        // 从顶点着色器传入的纹理坐标
+        varying vec2 v_textCoord;
+
+        void main() {
+            vec2 onePixel = vec2(1.0, 1.0) / u_textureSize;
+            vec4 colorSum = 
+                texture2D(u_image, v_textCoord + onePixel * vec2(-1, -1)) * u_kernel[0] + 
+                texture2D(u_image, v_textCoord + onePixel * vec2(0, -1)) * u_kernel[1] + 
+                texture2D(u_image, v_textCoord + onePixel * vec2(1, -1)) * u_kernel[2] + 
+                texture2D(u_image, v_textCoord + onePixel * vec2(-1, 0)) * u_kernel[3] + 
+                texture2D(u_image, v_textCoord + onePixel * vec2(0, 0)) * u_kernel[4] + 
+                texture2D(u_image, v_textCoord + onePixel * vec2(1, 0)) * u_kernel[5] + 
+                texture2D(u_image, v_textCoord + onePixel * vec2(-1, 1)) * u_kernel[6] + 
+                texture2D(u_image, v_textCoord + onePixel * vec2(0, 1)) * u_kernel[7] + 
+                texture2D(u_image, v_textCoord + onePixel * vec2(1, 1)) * u_kernel[8]; 
+            gl_FragColor = vec4((colorSum /u_kernelWeight).rgb, 1);
+        }
+    </script>
+    <script src="./convolutionKernel.js"></script>
+</body>
