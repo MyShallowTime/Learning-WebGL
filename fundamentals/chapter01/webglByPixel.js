@@ -54,9 +54,20 @@ const main = () => {
     // 创建顶点着色器
     const vertexShaderSource = document.querySelector("#vertex-shader").text;
     const vertexShader = createShader(gl, gl.VERTEX_SHADER, vertexShaderSource);
-    // 创建片段着色器
-    const fragmentShaderSource = document.querySelector("#fragment-shader").text;
-    const fragmentShader = createShader(gl, gl.FRAGMENT_SHADER, fragmentShaderSource);
+    // 创建片段着色器 模板字符串可
+    const fsGLSL = `
+        // 精度 中等 浮点类型
+        precision mediump float;
+
+        void main() {
+            // 片段着色器的主要设置变量
+            // rgba, [0, 1]
+            // 对于每一个像素，WebGL会调用该值设置像素颜色
+            gl_FragColor = vec4(1, 0, 0.5, 1); // 绘制值:[255, 0, 127, 255]
+        }
+    `;
+    // const fragmentShaderSource = document.querySelector("#fragment-shader").text;
+    const fragmentShader = createShader(gl, gl.FRAGMENT_SHADER, fsGLSL);
 
     // 创建着色程序
     const program = createProgram(gl, vertexShader, fragmentShader);
@@ -73,7 +84,7 @@ const main = () => {
     // 创建缓冲
     const positionBuffer = gl.createBuffer();
 
-    // 绑定位置信息缓冲 gl.ARRAY_BUFFER 约等于 webgl的一个全局变量
+    // 绑定位置信息缓冲 gl.ARRAY_BUFFER 约等于 webgl的一个全局变量此处是为了bufferData
     gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
 
     // 通过绑定点向缓冲中存放数据
@@ -125,7 +136,9 @@ const main = () => {
 
     // 从缓冲中读取数据
     // 将绑定点绑定到缓冲数据， 前面已经绑定过了
-    // gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+    // !!https://webglfundamentals.org/webgl/lessons/resources/webgl-state-diagram.html中明白了，多个buffer渲染时要重新绑定一下
+    // 此处是为了vertexAttribPointer
+    gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
 
     // 告诉属性（a_position）怎么从positionBuffer中读取数据。
     const size = 2; // 每次迭代运行提取两个单位数据

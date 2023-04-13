@@ -13,10 +13,15 @@
 <body>
     <canvas id="webgl" width="400px" height="300px"></canvas>
     <script id="vertex-shader" type="notjs">
-        // vec2 xy
+        // 顶点着色器 每个顶点调用一次
+        // vec2 xy 
+        // attribute 属性 从缓冲中获取的数据
         attribute vec2 a_position;
         // 分辨率 width height
+        // uniforms 全局变量 在一次绘制中对所有顶点保持一致值
         uniform vec2 u_resolution;
+
+        // 数据类型:float, vec2, vec3, vec4, mat2, mat3 和 mat4 
     
         void main() {
             // 像素坐标 转换到 [0, 1]
