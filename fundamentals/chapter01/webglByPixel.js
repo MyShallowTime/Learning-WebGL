@@ -131,7 +131,7 @@ const main = () => {
 
     // 怎么从我们准备的缓冲中获取数据给着色器中的属性（a_position），需要启用该属性。
     gl.enableVertexAttribArray(positionAttributeLocation);
-    // gl.enableVertexAttribArray(resolutionUniformLocation); // 这个不用启用吗？
+    // gl.enableVertexAttribArray(resolutionUniformLocation); // 这个不用启用吗？(全局变量不需要启用)
 
 
     // 从缓冲中读取数据
