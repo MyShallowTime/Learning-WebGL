@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<head>
+    <title>Webgl Fundamentals</title>
+    <style>
+        #webgl {
+            width: 400px;
+            height: 300px;
+            /* background-color: #414141; */
+        }
+    </style>
+
+</head>
+<body>
+    <canvas id="webgl" width="400px" height="300px"></canvas>
+    <script id="vertex-shader" type="notjs">
+        attribute vec2 a_position;
+        uniform mat3 u_matrix;
+
+        attribute vec2 a_textCoord;
+        varying vec2 v_textCoord;
+
+        void main() {
+            gl_Position = vec4((u_matrix * vec3(a_position, 1)).xy, 0, 1);
+
+            // 将纹理坐标传给片段着色器
+            // GPU会在点之间进行插值
+            v_textCoord = a_textCoord;
+        }
+    </script>
+    <script id="fragment-shader" type="notjs">
+        // 精度 中等 浮点类型 必须的，没有就创建shader失败
+        precision mediump float;
+        // 纹理 不是文章中说，完全没注意到u_image没有设置
+        uniform sampler2D u_image;
+
+        // 从顶点着色器传入的纹理坐标
+        varying vec2 v_textCoord;
+
+        void main() {
+            // 在纹理上寻找对应的颜色值
+            gl_FragColor = texture2D(u_image, v_textCoord);
+        }
+    </script>
+    <script src="./texture.js"></script>
+</body>

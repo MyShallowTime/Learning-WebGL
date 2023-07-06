@@ -65,11 +65,72 @@ const setRectangle = (gl, x, y, width, height) => {
         x2, y2
     ]), gl.STATIC_DRAW);
 }
+const createTexture = (gl) => {
+    const texture = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, texture);
 
+    // 设置参数，可以绘制任何尺寸的图像 ？？分别代表的什么意思？固定的吗？
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+    return texture;
+}
+
+const m3 = {
+    identity: () => {
+        return [
+            1,0,0,
+            0,1,0,
+            0,0,1
+        ]
+    },
+    projection:(width, height) => {
+        return [
+            2 / width,0,0,
+            0,-2 / height,0,
+            -1,1,1
+        ]
+    },
+    multiply: (a, b) => {
+        const a11 = a[0];
+        const a12 = a[1];
+        const a13 = a[2];
+        const a21 = a[3];
+        const a22 = a[4];
+        const a23 = a[5];
+        const a31 = a[6];
+        const a32 = a[7];
+        const a33 = a[8];
+        const b11 = b[0];
+        const b12 = b[1];
+        const b13 = b[2];
+        const b21 = b[3];
+        const b22 = b[4];
+        const b23 = b[5];
+        const b31 = b[6];
+        const b32 = b[7];
+        const b33 = b[8];
+
+        return [
+            b11 * a11 + b12 * a21 + b13 * a31,
+            b11 * a12 + b12 * a22 + b13 * a32,
+            b11 * a13 + b12 * a23 + b13 * a33,
+
+            b21 * a11 + b22 * a21 + b23 * a31,
+            b21 * a12 + b22 * a22 + b23 * a32,
+            b21 * a13 + b22 * a23 + b23 * a33,
+
+            b31 * a11 + b32 * a21 + b33 * a31,
+            b31 * a12 + b32 * a22 + b33 * a32,
+            b31 * a13 + b32 * a23 + b33 * a33,
+        ]
+    }
+}
 // 初始化代码，只会运行一次
 const main = () => {
     const image = new Image();
-    image.src = "./images/35020814.png";
+    image.src = "./images/point-907599.png";
     image.onload = () => {
         render(image);
     }
@@ -98,8 +159,8 @@ const render = (image) => {
     // 绑定位置信息缓冲 gl.ARRAY_BUFFER 约等于 webgl的一个全局变量
     gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
     // 绑定数据
-    const range = 150;
-    setRectangle(gl, randomInt(range), randomInt(range), 150, 100 );
+    // setRectangle(gl, 50, 50, 100, 100);
+    setRectangle(gl, 50, 50, 20, 20);
 
     // 找到纹理地址
     const texcoordLocation = gl.getAttribLocation(program, "a_textCoord");
@@ -113,21 +174,14 @@ const render = (image) => {
         1, 0, 
         1, 1
     ]), gl.STATIC_DRAW);
+    // 无论纹理是什么尺寸，纹理坐标范围始终是 0.0 到 1.0 。
 
-    const texture = gl.createTexture();
-    gl.bindTexture(gl.TEXTURE_2D, texture);
-
-    // 设置参数，可以绘制任何尺寸的图像 
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-
+    const texture = createTexture(gl);
     // 将图像上传到纹理
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
 
     const resolutionUniformLocation = gl.getUniformLocation(program, 'u_resolution');
-    const textureSizeUniformLocation = gl.getUniformLocation(program, 'u_textureSize');
+    const matrixUniformLocation = gl.getUniformLocation(program, 'u_matrix');
 
     // 裁剪空间的-1 -> +1分别对应x， y 的width， height
     // css里面设置400*300， 但gl.canvas的宽高还是300*150, 实际渲染时还是400*300， why？这句有什么意义？
@@ -163,8 +217,9 @@ const render = (image) => {
     // 设置全局变量-分辨率
     gl.uniform2f(resolutionUniformLocation, gl.canvas.width, gl.canvas.height);
 
-    // 设置全局变量-纹理大小
-    gl.uniform2f(textureSizeUniformLocation, image.width, image.height);
+    let matrix = m3.identity();
+    matrix = m3.multiply(matrix, m3.projection(gl.canvas.clientWidth, gl.canvas.clientHeight))
+    gl.uniformMatrix3fv(matrixUniformLocation,false, matrix);
 
     // WebGL运行GLSL着色程序
     const primitiveType = gl.TRIANGLES; // 矩形也是用三角形来绘制的
