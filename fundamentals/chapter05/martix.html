@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<head>
+    <title>Webgl Fundamentals</title>
+    <style>
+        #webgl {
+            width: 400px;
+            height: 300px;
+            background-color: #414141;
+        }
+    </style>
+
+</head>
+<body>
+    <canvas id="webgl" width="400px" height="300px"></canvas>
+    <script id="vertex-shader" type="notjs">
+
+        attribute vec4 a_position;
+        attribute vec4 a_color;
+
+        uniform mat4 u_matrix;
+
+        varying vec4 v_color;
+    
+        void main() {
+            gl_Position = u_matrix * a_position;
+            v_color = a_color;
+        }
+    </script>
+    <script src="./martix.js"></script>
+</body>
