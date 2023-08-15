@@ -49,7 +49,7 @@ const randomInt = (range) => {
     return Math.floor(Math.random() * range);
 }
 
-// 这种缓冲数据的方式在大多数程序中并不常见
+// 这种缓冲数据的方式在大多数程序中并不常见？
 const setRectangle = (gl, x, y, width, height) => {
     const x1 = x,
     x2 = x + width,
@@ -60,7 +60,7 @@ const setRectangle = (gl, x, y, width, height) => {
         x1, y1, 
         x2, y1, 
         x1, y2,
-        x1, y2, // 这里是什么意思, 按顺序画了一下，原来是画了两个三角形， 就只支持三角形吗？
+        x1, y2, // 这里是什么意思, 按顺序画了一下，原来是画了两个三角形， 就只支持三角形吗？（是的）
         x2, y1,
         x2, y2
     ]), gl.STATIC_DRAW);
