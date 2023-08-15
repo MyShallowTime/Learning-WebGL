@@ -65,15 +65,45 @@ const setRectangle = (gl, x, y, width, height) => {
         x2, y2
     ]), gl.STATIC_DRAW);
 }
-const createTexture = (gl) => {
+const createTexture = (gl, image) => {
     const texture = gl.createTexture();
     gl.bindTexture(gl.TEXTURE_2D, texture);
+    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+        // 将图像上传到纹理
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
 
-    // 设置参数，可以绘制任何尺寸的图像 ？？分别代表的什么意思？固定的吗？
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+    // 设置参数，可以绘制任何尺寸的图像(https://developer.mozilla.org/zh-CN/docs/Web/API/WebGLRenderingContext/texParameter)
+    // 效果最好的参数设置，其他的横竖线都没有
+    // gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    // gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    // mapboxgl源码中 将gl.NEAREST -> gl.LINEAR(https://github.com/mapbox/mapbox-gl-js/issues/8730)
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR_MIPMAP_NEAREST);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_NEAREST);
+    // gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+    // gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+
+    gl.generateMipmap(gl.TEXTURE_2D);
+    gl.bindTexture(gl.TEXTURE_2D, null);
+    // 没有变化
+    // gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_COMPARE_FUNC, gl.GEQUAL);
+    // gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_COMPARE_FUNC, gl.LESS);
+    // gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_COMPARE_FUNC, gl.GREATER);
+    // gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_COMPARE_FUNC, gl.EQUAL);
+    // gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_COMPARE_FUNC, gl.NOTEQUAL);
+    // gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_COMPARE_FUNC, gl.ALWAYS);
+    // gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_COMPARE_FUNC, gl.NEVER);
+
+    // 没有变化
+    // gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAX_LOD, 100);
+    // gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_LOD, 100);
+    // gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_R, gl.CLAMP_TO_EDGE);
+
+    // 这个只能默认值，否则是红色
+    // gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_COMPARE_MODE, gl.COMPARE_REF_TO_TEXTURE);
+    // 这个只能是0， 否则会变大
+    // gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_BASE_LEVEL, 0);
+    // gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAX_LEVEL, 1);
+
     return texture;
 }
 
@@ -159,8 +189,10 @@ const render = (image) => {
     // 绑定位置信息缓冲 gl.ARRAY_BUFFER 约等于 webgl的一个全局变量
     gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
     // 绑定数据
-    // setRectangle(gl, 50, 50, 100, 100);
-    setRectangle(gl, 50, 50, 20, 20);
+    // setRectangle(gl, 50, 50, 100, 100);//没有问题
+    setRectangle(gl, 50, 50, 20, 20); //竖线没有
+    // setRectangle(gl, 50, 50, 10, 10); //竖横线都没有了
+    // setRectangle(gl, 50, 50, 5, 5); //横线都没有了
 
     // 找到纹理地址
     const texcoordLocation = gl.getAttribLocation(program, "a_textCoord");
@@ -176,9 +208,7 @@ const render = (image) => {
     ]), gl.STATIC_DRAW);
     // 无论纹理是什么尺寸，纹理坐标范围始终是 0.0 到 1.0 。
 
-    const texture = createTexture(gl);
-    // 将图像上传到纹理
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+    const texture = createTexture(gl, image);
 
     const resolutionUniformLocation = gl.getUniformLocation(program, 'u_resolution');
     const matrixUniformLocation = gl.getUniformLocation(program, 'u_matrix');
