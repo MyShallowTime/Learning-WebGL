@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<head>
+    <title>Webgl Fundamentals</title>
+    <style>
+        #webgl {
+            width: 400px;
+            height: 300px;
+            background-color: #414141;
+        }
+    </style>
+
+</head>
+<body>
+    <canvas id="webgl" width="400px" height="300px"></canvas>
+    <script id="vertex-shader" type="notjs">
+        attribute vec4 a_position;
+        uniform mat4 u_matrix; // 矩阵表
+
+        attribute vec2 a_texcoord;
+        varying vec2 v_texcoord;
+
+        void main() {
+            gl_Position = u_matrix * a_position;
+            v_texcoord = a_texcoord;
+        }
+    </script>
+    <script id="fragment-shader" type="notjs">
+        precision mediump float;
+
+        varying vec2 v_texcoord;// 纹理坐标
+        uniform sampler2D u_texture; //纹理
+
+        void main() {
+            gl_FragColor = texture2D(u_texture, v_texcoord);
+        }
+    </script>
+    <script src="../libs/webgl-utils.js"></script>
+    <script src="../libs/m4.js"></script>
+    <script src="./drawImage.js"></script>
+</body>
